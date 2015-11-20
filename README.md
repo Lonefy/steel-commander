@@ -2,13 +2,13 @@
 > 
 ###Commander Support
 
-1.steel install
-2.steel update
-3.steel upgrade
-4.steel init
-5.steel server --pm2
-6.steel build
-7.steel dist
+1. steel install
+2. steel update
+3. steel upgrade
+4. steel init
+5. steel server --pm2
+6. steel build
+7. steel dist
 
 
 ### How to use it
