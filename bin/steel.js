@@ -5,9 +5,7 @@ var prettyTime = require('pretty-hrtime');
 var chalk = require('chalk');
 var semver = require('semver');
 var archy = require('archy');
-var Liftoff = require('liftoff');
 var tildify = require('tildify');
-var interpret = require('interpret');
 var v8flags = require('v8flags');
 var completion = require('../lib/completion');
 var argv = require('minimist')(process.argv.slice(2));
@@ -17,36 +15,38 @@ var fs = require('fs');
 var argv = require('minimist')(process.argv.slice(2));
 var child_process = require('child_process');
 // parse those args m8
-var cliPackage = require('../package');
+
 var versionFlag = argv.v || argv.version;
 var tasksFlag = argv.T || argv.tasks;
 var tasks = argv._;
 var toRun = tasks.length ? tasks : ['default'];
-var cwd = process.cwd();
 
-var getCwd = require('getcwd');
 
 // this is a hold-over until we have a better logging system
 // with log levels
 var simpleTasksFlag = argv['tasks-simple'];
-var shouldLog = !argv.silent && !simpleTasksFlag;
+// var shouldLog = !argv.silent && !simpleTasksFlag;
 
-var sv = require('steel-version');
-var dv = require('steel-dep-version');
-
-
+var steelVersion = require('steel-version');
+var cliPackage = require('../package');
 var merge = require('merge');
-
+var CWD = process.cwd();
 var command = tasks[0];
 
-if (command === 'install') {
-
-  jsonOut(cwd + '/package.json', merge(sv,dv), function(e){
+if (checkInstall(command)) {
+  
+  var arr = command.split('@')
+    , version = arr[1] || "*";
+  
+  jsonOut(CWD + '/package.json', steelVersion(version) , function(e){
       if(e){
-        console.log(e);
+          console.log(e);
       }else{
         console.log('start modules install');
-        execInstall();
+        execInstall(function(){
+          console.log(chalk.green("Steel Finish Install"));
+          delJsonFile();
+        });
       }
   });
   
@@ -56,15 +56,8 @@ if (command === 'install') {
 
 } else {
 
-  // console.log(process.env);
-
-  console.log('命令列表:');
-    console.log();
-    console.log('    1、将STK处理工具安装到当前目录');
-    console.log('    grunt-stk install');
-    console.log('    2、在当前目录更新STK处理工具');
-    console.log('    grunt-stk update');
-
+    console.log(argv);
+    console.log(configBase);
     var configBase = process.cwd() + '/node_modules/steel-commander';
 
     handleArguments({
@@ -73,42 +66,22 @@ if (command === 'install') {
       modulePath : configBase + '/index.js'
     })
 }
-
-
-// function updateGruntSTK() {
-//   child_process.exec('npm install grunt-stk -g', gruntSTKInstall).stdout.pipe(process.stdout);
-// }
-
-// function gruntSTKInstall() {
-//   console.log('grunt stk copy...');
-//   copyPath(gruntCopyPath, cwd, installGrunt);
-//   console.log('grunt stk copy end!');
-// }
-
-// function installGrunt() {
-//   child_process.exec('npm install grunt-cli -g', npmInstall).stdout.pipe(process.stdout);
-// }
-
-// function npmInstall() {
-//   child_process.exec('npm install').stdout.pipe(process.stdout);
-// }
-
-function jsonOut(filePath, Json, callback){
-
-    //if (fs.existsSync(filePath)) return;
-    fs.writeFile(filePath,  JSON.stringify(Json) , callback);
+function checkInstall(text){
+  return /^install/.test(text);
 }
 
-function execInstall(){
-  child_process.exec('npm install',function(){
-    console.log("Steel Finish install");
-  }).stdout.pipe(process.stdout);
-} 
+function jsonOut(filePath, json, callback){
+    //if (fs.existsSync(filePath)) return;
+    fs.writeFile(filePath, JSON.stringify(json), callback);
+}
 
-function execUpdate(){
-  child_process.exec('npm install steel-commander -g',function(){
-    console.log("Steel Finish Update");
-  }).stdout.pipe(process.stdout);
+function execInstall(callback){
+  child_process.exec('npm install', callback).stdout.pipe(process.stdout);
+}
+
+function delJsonFile(){
+    var file = CWD + '/package.json';
+    fs.existsSync(file) && fs.unlink(file);
 }
 
 function handleArguments(env) {
@@ -118,13 +91,13 @@ function handleArguments(env) {
   // env.configPath = env.configBase + '/steelfile.js'; 
   // env.modulePath = env.configBase + '/index.js'
 
-  // if (versionFlag && tasks.length === 0) {
-  //   gutil.log('CLI version', cliPackage.version);
-  //   if (env.modulePackage && typeof env.modulePackage.version !== 'undefined') {
-  //     gutil.log('Local version', env.modulePackage.version);
-  //   }
-  //   process.exit(0);
-  // }
+  if (versionFlag && tasks.length === 0) {
+    gutil.log('CLI version', cliPackage.version);
+    if (env.modulePackage && typeof env.modulePackage.version !== 'undefined') {
+      gutil.log('Local version', env.modulePackage.version);
+    }
+    process.exit(0);
+  }
   // console.log('tks',tasks);
   // if(tasks.indexOf('install')!= -1 || tasks.indexOf('update')!= -1 || tasks.indexOf('upgrade')!= -1){
   //     console.log(tasks);
@@ -154,8 +127,6 @@ function handleArguments(env) {
 
   // chdir before requiring gulpfile to make sure
   // we let them chdir as needed
-  
-
   // if (process.cwd() !== env.cwd) {
   //   process.chdir(env.cwd);
   //   gutil.log(
@@ -166,9 +137,8 @@ function handleArguments(env) {
 
   // this is what actually loads up the gulpfile
   // 
-  console.log(env);
+  
   require(env.configPath);
-//  var x = require(env.configPath);
 
   gutil.log('Using gulpfile', chalk.magenta(tildify(env.configPath)));
 
