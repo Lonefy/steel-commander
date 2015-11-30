@@ -7,20 +7,18 @@ var semver = require('semver');
 var archy = require('archy');
 var tildify = require('tildify');
 var v8flags = require('v8flags');
-var completion = require('../lib/completion');
+//var completion = require('../lib/completion');
 var argv = require('minimist')(process.argv.slice(2));
 var taskTree = require('../lib/taskTree');
 
 var fs = require('fs');
-var argv = require('minimist')(process.argv.slice(2));
+var path = require('path');
 var child_process = require('child_process');
-// parse those args m8
 
 var versionFlag = argv.v || argv.version;
 var tasksFlag = argv.T || argv.tasks;
 var tasks = argv._;
 var toRun = tasks.length ? tasks : ['default'];
-
 
 // this is a hold-over until we have a better logging system
 // with log levels
@@ -30,42 +28,65 @@ var simpleTasksFlag = argv['tasks-simple'];
 var steelVersion = require('steel-version');
 var cliPackage = require('../package');
 var merge = require('merge');
+
 var CWD = process.cwd();
+var configBase = path.join(CWD, "node_modules", "steel-commander");
 var command = tasks[0];
 
 if (checkInstall(command)) {
   
   var arr = command.split('@')
     , version = arr[1] || "*";
-  
-  jsonOut(CWD + '/package.json', steelVersion(version) , function(e){
-      if(e){
-          console.log(e);
-      }else{
-        console.log('start modules install');
-        execInstall(function(){
-          console.log(chalk.green("Steel Finish Install"));
-          delJsonFile();
-        });
-      }
-  });
-  
+
+  installModule('steel-commander', function(){
+
+    gutil.log(chalk.green('Start modules install'));
+    
+    try {
+      var localSteelVersion = require.resolve(path.join(configBase, "node_modules", "steel-version"));
+      steelVersion = require(localSteelVersion);
+    } catch(e) {}
+
+    var jsonPath = CWD + '/package.json';
+    jsonOut(jsonPath, steelVersion(version) , function(e){
+        if(e){
+            console.log(e);
+        }else{
+          installModule("",function(){
+            delFile(jsonPath);
+            gutil.log(chalk.green('Steel Finish Install'));
+          });
+        }
+    })
+  })
+
 } else if (command === 'update') {
   console.log(process.argv);
-} else if(command === 'upgrade'){
+} else if(command === 'init'){
+
+  var src = path.join(configBase, "lib", "steelfile.js");
+
+  if (!fs.existsSync(src)) {
+    gutil.log(chalk.red('Try "steel install" first'));
+    process.exit(1);
+  };
+  fs.writeFile(CWD + '/steelfile.js', fs.readFileSync(src), function(e){
+    if(e){
+      console.log(e);
+    }
+    gutil.log(chalk.green('steel init Finish'));
+  });
 
 } else {
 
-    console.log(argv);
-    console.log(configBase);
-    var configBase = process.cwd() + '/node_modules/steel-commander';
-
     handleArguments({
+      cwd: CWD,
       configBase : configBase,
       configPath : configBase + '/steelfile.js',
       modulePath : configBase + '/index.js'
     })
 }
+
 function checkInstall(text){
   return /^install/.test(text);
 }
@@ -75,41 +96,34 @@ function jsonOut(filePath, json, callback){
     fs.writeFile(filePath, JSON.stringify(json), callback);
 }
 
-function execInstall(callback){
-  child_process.exec('npm install', callback).stdout.pipe(process.stdout);
+function installModule(module, callback){
+  child_process.exec('npm install' + module, callback).stdout.pipe(process.stdout);
 }
 
-function delJsonFile(){
-    var file = CWD + '/package.json';
-    fs.existsSync(file) && fs.unlink(file);
+function delFile(filepath){
+    fs.existsSync(filepath) && fs.unlink(filepath);
 }
 
 function handleArguments(env) {
 
-  // var cwd = process.cwd().replace(/\\/g, "/");
   // env.configBase = cwd + '/node_modules/steel-commander';
   // env.configPath = env.configBase + '/steelfile.js'; 
   // env.modulePath = env.configBase + '/index.js'
 
   if (versionFlag && tasks.length === 0) {
-    gutil.log('CLI version', cliPackage.version);
+    gutil.log('Golbal version', cliPackage.version);
     if (env.modulePackage && typeof env.modulePackage.version !== 'undefined') {
       gutil.log('Local version', env.modulePackage.version);
     }
     process.exit(0);
   }
-  // console.log('tks',tasks);
-  // if(tasks.indexOf('install')!= -1 || tasks.indexOf('update')!= -1 || tasks.indexOf('upgrade')!= -1){
-  //     console.log(tasks);
-  //     return;
-  // }
 
   if (!env.modulePath) {
     gutil.log(
       chalk.red('Local steel not found in'),
       chalk.magenta(tildify(env.cwd))
     );
-    gutil.log(chalk.red('Try running: npm install gulp'));
+    gutil.log(chalk.red('Try running: steel install'));
     process.exit(1);
   }
 
@@ -121,8 +135,8 @@ function handleArguments(env) {
   // check for semver difference between cli and local installation
   // if (semver.gt(cliPackage.version, env.modulePackage.version)) {
   //   gutil.log(chalk.red('Warning: gulp version mismatch:'));
-  //   gutil.log(chalk.red('Global gulp is', cliPackage.version));
-  //   gutil.log(chalk.red('Local gulp is', env.modulePackage.version));
+  //   gutil.log(chalk.red('Global version is', cliPackage.version));
+  //   gutil.log(chalk.red('Local version is', env.modulePackage.version));
   // }
 
   // chdir before requiring gulpfile to make sure
@@ -134,27 +148,22 @@ function handleArguments(env) {
   //     chalk.magenta(tildify(env.cwd))
   //   );
   // }
-
-  // this is what actually loads up the gulpfile
-  // 
   
   require(env.configPath);
 
-  gutil.log('Using gulpfile', chalk.magenta(tildify(env.configPath)));
+  gutil.log('Using steelfile', chalk.magenta(tildify(env.configPath)));
 
-  var gulpInst = require(env.modulePath);
-  logEvents(gulpInst);
-  // console.log(env.configPath);
-  // console.log(env.modulePath);
-  // console.log(gulpInst);
+  var inst = require(env.modulePath);
+  logEvents(inst);
+
   process.nextTick(function () {
     if (simpleTasksFlag) {
-      return logTasksSimple(env, gulpInst);
+      return logTasksSimple(env, inst);
     }
     if (tasksFlag) {
-      return logTasks(env, gulpInst);
+      return logTasks(env, inst);
     }
-    gulpInst.start.apply(gulpInst, toRun);
+    inst.start.apply(inst, toRun);
   });
 }
 

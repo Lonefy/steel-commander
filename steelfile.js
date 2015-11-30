@@ -9,27 +9,39 @@ var del = require('del');
 var merge2 = require('merge2');
 var $ = require('gulp-load-plugins')({scope:'workDependencies'});
 
-var port = 80;
-var pathnamePrefix = '/t6/apps/weibo_sell/';
-var front_base = 'server_front';
-var front_hostname = 'js.t.sinajs.cn img.t.sinajs.cn';
-var back_base = 'server_back'; //模拟后端的文件放置目录
-var back_hostname = 'shop.sc.weibo.com shop1.sc.weibo.com'; //后端的HOST，目的是真实模拟后端的页面路由请求，提供出前端可仿真的功能，比如 /index 对应 /html/index.html
-// 
+// var port = 80;
+// var pathnamePrefix = '/t6/apps/weibo_sell/';
+// var front_base = 'server_front';
+// var front_hostname = 'js.t.sinajs.cn img.t.sinajs.cn';
+// var back_base = 'server_back'; //模拟后端的文件放置目录
+// var back_hostname = 'shop.sc.weibo.com shop1.sc.weibo.com'; //后端的HOST，目的是真实模拟后端的页面路由请求，提供出前端可仿真的功能，比如 /index 对应 /html/index.html
 
-// var r = require("./src/js/router")();
+var CWD = process.cwd();
+var merge = require('merge');
+var custFile = require(CWD + '/steelfile');
+
+var port = custFile.port || 80;
+var pathnamePrefix = custFile.pathnamePrefix || '/t6/apps/weibo_sell/';
+var front_base = custFile.front_base || 'server_front';
+var front_hostname = custFile.front_hostname || 'js.t.sinajs.cn img.t.sinajs.cn';
+var back_base = custFile.back_base || 'server_back'; //模拟后端的文件放置目录
+var custTasks = custFile.tasks;
+
+for(var f in custTasks){
+    gulp.task(f, custTasks[f]);
+}
 
 gulp.task('default', function() {
     console.log('支持命令列表:')
-    console.log('	gulp debug');
-    console.log('		调试处理：对src目录文件进行debug处理，生成调试代码，包括模板处理、脚本wrap和合并、静态文件copy等');
-    console.log('	gulp dist');
-    console.log('		仿真处理：对src目录文件进行dist处理，生成仿真代码，除做debug中的处理外，还有css压缩合并');
-    console.log('	gulp build');
-    console.log('		上线处理：生成上线文件,会把可上线的结果处理了build目录下');
-    console.log('	gulp server');
-    console.log('		启动调试服务器命令 --dist 为仿真服务器 --pm2 为使服务后台运行(win下无效)');
-    console.log('   gulp serverStop');
+    console.log('   steel debug');
+    console.log('       调试处理：对src目录文件进行debug处理，生成调试代码，包括模板处理、脚本wrap和合并、静态文件copy等');
+    console.log('   steel dist');
+    console.log('       仿真处理：对src目录文件进行dist处理，生成仿真代码，除做debug中的处理外，还有css压缩合并');
+    console.log('   steel build');
+    console.log('       上线处理：生成上线文件,会把可上线的结果处理了build目录下');
+    console.log('   steel server');
+    console.log('       启动调试服务器命令 --dist 为仿真服务器 --pm2 为使服务后台运行(win下无效)');
+    console.log('   steel serverStop');
     console.log('       关闭服务器命令 当存在后台服务时有效');
 });
 //暴露命令相关=======================
@@ -44,13 +56,13 @@ gulp.task('dist', function() {
     });
 });
 
-gulp.task('tc', function() {
-        gulp.src(['src/css/**/*.*'])
-        .pipe($.steelCssPostfix({ 
-             filter:["pages/*.*"] 
-        }))
-        .pipe(gulp.dest(front_base + '/css/'));
-});
+// gulp.task('tc', function() {
+//         gulp.src(['src/css/**/*.*'])
+//         .pipe($.steelCssPostfix({ 
+//              filter:["pages/*.*"] 
+//         }))
+//         .pipe(gulp.dest(front_base + '/css/'));
+// });
 
 
 gulp.task('build', function() {

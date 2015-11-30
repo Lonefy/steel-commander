@@ -1,7 +1,7 @@
 {
   "name": "steel-commander",
   "description": "The steel controller module",
-  "version": "0.0.13",
+  "version": "0.0.16",
   "homepage": "https://github.com/lonefy/steel-commander#readme",
   "repository": {
     "type": "git",
@@ -31,8 +31,8 @@
     "v8flags": "^2.0.2",
     "vinyl-fs": "^0.3.0",
     "gulp-load-plugins": "*",
-    "merge": "*",
-    "steel-version": "0.0.13"
+    "steel-version": "*",
+    "merge": "*"
   },
   "workDependencies": {
     "gulp-util": "*",
@@ -59,7 +59,7 @@
     "node": ">= 0.9"
   },
   "licenses": "MIT",
-  "_id": "steel-commander@0.0.12",
+  "_id": "steel-commander@0.0.11",
   "_npmVersion": "2.5.1",
   "_nodeVersion": "0.12.0",
   "maintainers": [
@@ -75,6 +75,6 @@
     "url": "https://github.com/lonefy/steel-commander/issues"
   },
   "scripts": {},
-  "_shasum": "dc7a654fe4eb0594d85b2143d02afcd306eb1412",
+  "_shasum": "75bf2fd327abceeaeaedac0b68161fb52e755985",
   "_from": "steel-commander@*"
 }
