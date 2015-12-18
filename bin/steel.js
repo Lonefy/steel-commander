@@ -36,47 +36,42 @@ var command = tasks[0];
 if (checkInstall(command)) {
   
   var arr = command.split('@')
-    , version = arr[1] || "*";
+    , version = arr[1] || "*"
+    , jsonPath = CWD + '/package.json';
 
-  installModule('steel-commander', function(){
+  jsonOut(jsonPath, {} , function(e){
+    installModule('steel-commander', function(){
 
-    gutil.log(chalk.green('Start modules install'));
-    
-    try {
-      var localSteelVersion = require.resolve(path.join(configBase, "node_modules", "steel-version"));
-      steelVersion = require(localSteelVersion);
-    } catch(e) {}
+      gutil.log(chalk.green('Start modules install'));
+      
+      try {
+        var localSteelVersion = require.resolve(path.join(configBase, "node_modules", "steel-version"));
+        steelVersion = require(localSteelVersion);
+      } catch(e) {}
 
-    var jsonPath = CWD + '/package.json';
-    jsonOut(jsonPath, steelVersion(version) , function(e){
+      jsonOut(jsonPath, steelVersion(version).getJSON() , function(e){
+          if(e){
+              console.log(e);
+          }else{
+            installModule("",function(){
+              delFile(jsonPath);
+              gutil.log(chalk.green('Steel Finish Install'));
+            });
+          }
+      })
+
+      var src = steelVersion(version).getFile();
+
+      fs.writeFile(CWD + '/steelfile.js', fs.readFileSync(src), function(e){
         if(e){
-            console.log(e);
-        }else{
-          installModule("",function(){
-            delFile(jsonPath);
-            gutil.log(chalk.green('Steel Finish Install'));
-          });
+          console.log(e);
         }
+        gutil.log(chalk.green('...generate steelfile, done'));
+      });
     })
   })
-
 } else if (command === 'update') {
-  console.log(process.argv);
-} else if(command === 'init'){
-
-  var src = path.join(configBase, "lib", "steelfile.js");
-
-  if (!fs.existsSync(src)) {
-    gutil.log(chalk.red('Try "steel install" first'));
-    process.exit(1);
-  };
-  fs.writeFile(CWD + '/steelfile.js', fs.readFileSync(src), function(e){
-    if(e){
-      console.log(e);
-    }
-    gutil.log(chalk.green('steel init Finish'));
-  });
-
+  console.log('comming soon');
 } else {
 
     handleArguments({
@@ -247,4 +242,3 @@ function logEvents(gulpInst) {
     process.exit(1);
   });
 }
-

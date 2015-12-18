@@ -2,13 +2,13 @@
 > 
 ###Commander Support
 
-1. steel install
-2. steel update
-3. steel upgrade
-4. steel init
-5. steel server --pm2
-6. steel build
-7. steel dist
+1.steel install
+2.steel update
+3.steel upgrade
+4.steel init
+5.steel server --pm2
+6.steel build
+7.steel dist
 
 
 ### How to use it
@@ -19,6 +19,9 @@
 4. Run `steel server`.
 
 #### Options
-
+- `--cwd` specify the working directory to run hacker
+- `--hackerfile` specify an exact hackerfile path
+- `--require` require an external module before loading your hackerfile
+- `--verbose` show some debugging info about how hacker is working
 
 

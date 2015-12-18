@@ -46,6 +46,8 @@
     "merge2": "0.3.5",
     "gulp-uglify": "1.2.0",
     "gulp-minify-css": "1.1.1",
+    "gulp-filter": "*",
+    "gulp-insert": "*",
     "gulp-jade": "1.0.0",
     "gulp-steel-amd-concat": "*",
     "gulp-steel-wrap-amd": "*",
@@ -59,7 +61,7 @@
     "node": ">= 0.9"
   },
   "licenses": "MIT",
-  "_id": "steel-commander@0.0.11",
+  "_id": "steel-commander@0.0.16",
   "_npmVersion": "2.5.1",
   "_nodeVersion": "0.12.0",
   "maintainers": [
@@ -75,6 +77,6 @@
     "url": "https://github.com/lonefy/steel-commander/issues"
   },
   "scripts": {},
-  "_shasum": "75bf2fd327abceeaeaedac0b68161fb52e755985",
+  "_shasum": "81119e60cc40e01c892e909636fbd71e29fed324",
   "_from": "steel-commander@*"
 }

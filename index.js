@@ -1,4 +1,4 @@
 
-var gulp  = require('gulp');
+var steel = require('./lib/steel');
 
-module.exports = gulp;
+module.exports = steel;
