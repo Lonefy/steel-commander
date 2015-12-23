@@ -77,7 +77,7 @@ if (checkInstall(command)) {
     handleArguments({
       cwd: CWD,
       configBase : configBase,
-      configPath : configBase + '/steelfile.js',
+      configPath : CWD + '/steelfile.js',
       modulePath : configBase + '/index.js'
     })
 }
@@ -148,7 +148,7 @@ function handleArguments(env) {
 
   gutil.log('Using steelfile', chalk.magenta(tildify(env.configPath)));
 
-  var inst = require(env.modulePath);
+  var inst = require(env.modulePath).gulp;
   logEvents(inst);
 
   process.nextTick(function () {
