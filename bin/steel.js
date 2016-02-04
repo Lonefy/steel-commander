@@ -39,11 +39,10 @@ if (checkInstall(command)) {
     , version = arr[1] || "*"
     , jsonPath = CWD + '/package.json';
 
+  gutil.log(chalk.green('Start install'));
   jsonOut(jsonPath, {} , function(e){
-    installModule('steel-commander', function(){
 
-      gutil.log(chalk.green('Start modules install'));
-      
+    installCore(function(){
       try {
         var localSteelVersion = require.resolve(path.join(configBase, "node_modules", "steel-version"));
         steelVersion = require(localSteelVersion);
@@ -53,7 +52,7 @@ if (checkInstall(command)) {
           if(e){
               console.log(e);
           }else{
-            installModule("",function(){
+            installModule(function(){
               delFile(jsonPath);
               gutil.log(chalk.green('Steel Finish Install'));
             });
@@ -91,8 +90,12 @@ function jsonOut(filePath, json, callback){
     fs.writeFile(filePath, JSON.stringify(json), callback);
 }
 
-function installModule(module, callback){
-  child_process.exec('npm install' + module, callback).stdout.pipe(process.stdout);
+function installCore(callback){
+  child_process.exec('npm install steel-commander', callback);
+}
+
+function installModule(callback){
+  child_process.exec('npm install', callback).stdout.pipe(process.stdout);
 }
 
 function delFile(filepath){
