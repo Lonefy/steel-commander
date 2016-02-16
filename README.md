@@ -2,14 +2,12 @@
 > 
 
 ###Commander Support
-
-1.`steel install`.
-2.`steel update`.
-3.`steel upgrade`.
-4.`steel init`.
-5.`steel server --pm2` (--pm2 for Linux).
-6.`steel build`.
-7.`steel dist`.
+* 1.`steel install`.
+* 2.`steel upgrade`.
+* 3.`steel init`.
+* 4.`steel server --pm2` (--pm2 for Linux).
+* 5.`steel build`.
+* 6.`steel dist`.
 
 
 ### How to use
