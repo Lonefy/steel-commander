@@ -43,6 +43,7 @@ if (checkInstall(command)) {
   jsonOut(jsonPath, {} , function(e){
 
     installCore(function(){
+      
       try {
         var localSteelVersion = require.resolve(path.join(configBase, "node_modules", "steel-version"));
         steelVersion = require(localSteelVersion);
@@ -107,7 +108,6 @@ function handleArguments(env) {
   // env.configBase = cwd + '/node_modules/steel-commander';
   // env.configPath = env.configBase + '/steelfile.js'; 
   // env.modulePath = env.configBase + '/index.js'
-
   if (versionFlag && tasks.length === 0) {
     gutil.log('Golbal version', cliPackage.version);
     if (env.modulePackage && typeof env.modulePackage.version !== 'undefined') {
@@ -147,7 +147,13 @@ function handleArguments(env) {
   //   );
   // }
   
-  require(env.configPath);
+  try{
+      require(env.configPath);
+  }
+  catch(e){
+      gutil.log(chalk.red('No steelfile found, check your folder'));  
+      process.exit(1);      
+  }
 
   gutil.log('Using steelfile', chalk.magenta(tildify(env.configPath)));
 
@@ -239,9 +245,9 @@ function logEvents(gulpInst) {
 
   gulpInst.on('task_not_found', function (err) {
     gutil.log(
-      chalk.red('Task \'' + err.task + '\' is not in your gulpfile')
+      chalk.red('Task \'' + err.task + '\' is not in your steelfile')
     );
-    gutil.log('Please check the documentation for proper gulpfile formatting');
+    gutil.log('Please check the documentation for proper steelfile formatting');
     process.exit(1);
   });
 }
