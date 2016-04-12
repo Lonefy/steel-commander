@@ -1,253 +1,119 @@
 #!/usr/bin/env node
 
-var gutil = require('gulp-util');
 var prettyTime = require('pretty-hrtime');
 var chalk = require('chalk');
-var semver = require('semver');
-var archy = require('archy');
-var tildify = require('tildify');
-var v8flags = require('v8flags');
-//var completion = require('../lib/completion');
+var _ = require('lodash');
+var inquirer = require('inquirer');
 var argv = require('minimist')(process.argv.slice(2));
-var taskTree = require('../lib/taskTree');
 
-var fs = require('fs');
 var path = require('path');
-var child_process = require('child_process');
 
-var versionFlag = argv.v || argv.version;
 var tasksFlag = argv.T || argv.tasks;
 var tasks = argv._;
-var toRun = tasks.length ? tasks : ['default'];
 
-// this is a hold-over until we have a better logging system
-// with log levels
-var simpleTasksFlag = argv['tasks-simple'];
-// var shouldLog = !argv.silent && !simpleTasksFlag;
 
-var steelVersion = require('steel-version');
-var cliPackage = require('../package');
-var merge = require('merge');
+var Command = require('../lib/command');
 
 var CWD = process.cwd();
 var configBase = path.join(CWD, "node_modules", "steel-commander");
-var command = tasks[0];
+var cmd = tasks[0];
 
-if (checkInstall(command)) {
-  
-  var arr = command.split('@')
-    , version = arr[1] || "*"
-    , jsonPath = CWD + '/package.json';
 
-  gutil.log(chalk.green('Start install'));
-  jsonOut(jsonPath, {} , function(e){
+main();
 
-    installCore(function(){
-      
-      try {
-        var localSteelVersion = require.resolve(path.join(configBase, "node_modules", "steel-version"));
-        steelVersion = require(localSteelVersion);
-      } catch(e) {}
+function main() {
+    var env = steelEnv();
+    handle(env);
+}
 
-      jsonOut(jsonPath, steelVersion(version).getJSON() , function(e){
-          if(e){
-              console.log(e);
-          }else{
-            installModule(function(){
-              delFile(jsonPath);
-              gutil.log(chalk.green('Steel Finish Install'));
-            });
-          }
-      })
+function handle(env) {
+    var mainCmd = _.split(cmd, '@', 1)[0];
 
-      var src = steelVersion(version).getFile();
+    if (env.command.isHas(mainCmd)) {
+        env.command.excute(mainCmd, env);
+    }
+    else if (cmd !== undefined) {
+        //taskfile tasks
+        env.command.excute('task', env);
+    }
+    else {
 
-      fs.writeFile(CWD + '/steelfile.js', fs.readFileSync(src), function(e){
-        if(e){
-          console.log(e);
+        interactiveCli(env);
+    }
+}
+
+
+function commandInst() {
+
+    var command = new Command(),
+        cmdPath = '../lib/command';
+
+    command.add('install', require(cmdPath + '/cmd-install'));
+    command.add('update', require(cmdPath + '/cmd-update'));
+    command.add('help', require(cmdPath + '/cmd-help'));
+    command.add('init', require(cmdPath + '/cmd-init'));
+    command.add('task', require(cmdPath + '/cmd-task'));
+
+    return command;
+}
+
+
+function steelEnv() {
+    var env = {};
+
+    env.command = commandInst();
+    //command-line
+    env.cmd = cmd;
+    env.argv = argv;
+    //Paths
+    env.cwd = CWD;
+    env.configBase = configBase;
+    env.configPath = CWD + '/steelfile.js';
+    env.modulePath = configBase + '/index.js';
+    // env.configBase = CWD + '/node_modules/steel-commander';
+    // env.configPath = env.configBase + '/steelfile.js';
+    // env.modulePath = env.configBase + '/index.js'
+
+    return env;
+}
+
+function interactiveCli(env) {
+
+    var defaultChoices = [{
+        name: 'install',
+        value: 'install'
+    }, {
+            name: 'init',
+            value: 'init'
+        }, {
+            name: 'update',
+            value: 'update'
+        }, {
+            name: 'help',
+            value: 'help',
+        }, {
+            name: 'exit',
+            value: 'exit',
+            message: "ByeBye",
+            default: true
+        }];
+
+
+    inquirer.prompt([{
+        name: 'whatToDo',
+        type: 'list',
+        message: 'What would you like to do?',
+        choices: _.flatten([
+            new inquirer.Separator()
+            , defaultChoices
+            , new inquirer.Separator()
+        ])
+    }], function(answer) {
+
+        if (answer.whatToDo === 'exit') {
+            return process.exit(0);
         }
-        gutil.log(chalk.green('...generate steelfile, done'));
-      });
-    })
-  })
-} else if (command === 'update') {
-  console.log('comming soon');
-} else {
+        env.command.excute(answer.whatToDo, env);
 
-    handleArguments({
-      cwd: CWD,
-      configBase : configBase,
-      configPath : CWD + '/steelfile.js',
-      modulePath : configBase + '/index.js'
-    })
-}
-
-function checkInstall(text){
-  return /^install/.test(text);
-}
-
-function jsonOut(filePath, json, callback){
-    //if (fs.existsSync(filePath)) return;
-    fs.writeFile(filePath, JSON.stringify(json), callback);
-}
-
-function installCore(callback){
-  child_process.exec('npm install steel-commander', callback);
-}
-
-function installModule(callback){
-  child_process.exec('npm install', callback).stdout.pipe(process.stdout);
-}
-
-function delFile(filepath){
-    fs.existsSync(filepath) && fs.unlink(filepath);
-}
-
-function handleArguments(env) {
-
-  // env.configBase = cwd + '/node_modules/steel-commander';
-  // env.configPath = env.configBase + '/steelfile.js'; 
-  // env.modulePath = env.configBase + '/index.js'
-  if (versionFlag && tasks.length === 0) {
-    gutil.log('Golbal version', cliPackage.version);
-    if (env.modulePackage && typeof env.modulePackage.version !== 'undefined') {
-      gutil.log('Local version', env.modulePackage.version);
-    }
-    process.exit(0);
-  }
-
-  if (!env.modulePath) {
-    gutil.log(
-      chalk.red('Local steel not found in'),
-      chalk.magenta(tildify(env.cwd))
-    );
-    gutil.log(chalk.red('Try running: steel install'));
-    process.exit(1);
-  }
-
-  if (!env.configPath) {
-    gutil.log(chalk.red('No steel found'));
-    process.exit(1);
-  }
-
-  // check for semver difference between cli and local installation
-  // if (semver.gt(cliPackage.version, env.modulePackage.version)) {
-  //   gutil.log(chalk.red('Warning: gulp version mismatch:'));
-  //   gutil.log(chalk.red('Global version is', cliPackage.version));
-  //   gutil.log(chalk.red('Local version is', env.modulePackage.version));
-  // }
-
-  // chdir before requiring gulpfile to make sure
-  // we let them chdir as needed
-  // if (process.cwd() !== env.cwd) {
-  //   process.chdir(env.cwd);
-  //   gutil.log(
-  //     'Working directory changed to',
-  //     chalk.magenta(tildify(env.cwd))
-  //   );
-  // }
-  
-  try{
-      require(env.configPath);
-  }
-  catch(e){
-      gutil.log(chalk.red('No steelfile found, check your folder'));  
-      process.exit(1);      
-  }
-
-  gutil.log('Using steelfile', chalk.magenta(tildify(env.configPath)));
-
-  var inst = require(env.modulePath).gulp;
-  logEvents(inst);
-
-  process.nextTick(function () {
-    if (simpleTasksFlag) {
-      return logTasksSimple(env, inst);
-    }
-    if (tasksFlag) {
-      return logTasks(env, inst);
-    }
-    inst.start.apply(inst, toRun);
-  });
-}
-
-function logTasks(env, localGulp) {
-  var tree = taskTree(localGulp.tasks);
-  tree.label = 'Tasks for ' + chalk.magenta(tildify(env.configPath));
-  archy(tree)
-    .split('\n')
-    .forEach(function (v) {
-      if (v.trim().length === 0) {
-        return;
-      }
-      gutil.log(v);
     });
-}
-
-function logTasksSimple(env, localGulp) {
-  console.log(Object.keys(localGulp.tasks)
-    .join('\n')
-    .trim());
-}
-
-// format orchestrator errors
-function formatError(e) {
-  if (!e.err) {
-    return e.message;
-  }
-
-  // PluginError
-  if (typeof e.err.showStack === 'boolean') {
-    return e.err.toString();
-  }
-
-  // normal error
-  if (e.err.stack) {
-    return e.err.stack;
-  }
-
-  // unknown (string, number, etc.)
-  return new Error(String(e.err)).stack;
-}
-
-// wire up logging events
-function logEvents(gulpInst) {
-
-  // total hack due to poor error management in orchestrator
-  gulpInst.on('err', function () {
-    failed = true;
-  });
-
-  gulpInst.on('task_start', function (e) {
-    // TODO: batch these
-    // so when 5 tasks start at once it only logs one time with all 5
-    gutil.log('Starting', '\'' + chalk.cyan(e.task) + '\'...');
-  });
-
-  gulpInst.on('task_stop', function (e) {
-    var time = prettyTime(e.hrDuration);
-    gutil.log(
-      'Finished', '\'' + chalk.cyan(e.task) + '\'',
-      'after', chalk.magenta(time)
-    );
-  });
-
-  gulpInst.on('task_err', function (e) {
-    var msg = formatError(e);
-    var time = prettyTime(e.hrDuration);
-    gutil.log(
-      '\'' + chalk.cyan(e.task) + '\'',
-      chalk.red('errored after'),
-      chalk.magenta(time)
-    );
-    gutil.log(msg);
-  });
-
-  gulpInst.on('task_not_found', function (err) {
-    gutil.log(
-      chalk.red('Task \'' + err.task + '\' is not in your steelfile')
-    );
-    gutil.log('Please check the documentation for proper steelfile formatting');
-    process.exit(1);
-  });
 }
