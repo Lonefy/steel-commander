@@ -1,7 +1,7 @@
 # Steel-Commander
 > 
 ###Attention
->Currently, it is not recommanded using the GUI mode,cause there are some bug of nodejs.
+>Currently, it is not recommanded to use the GUI mode,cause there are some bug of nodejs on Windows.
 
 ###Instal
 Install globally with `npm install -g steel-commander`.
@@ -45,4 +45,4 @@ steel server --pm2
 ```
    
 ###steel build
-
+build your project
