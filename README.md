@@ -8,11 +8,11 @@ Install globally with `npm install -g steel-commander`.
 
 ###Commander Support
 
-* 1 steel install
-* 2 steel update
-* 4 steel init
-* 5 steel server
-* 6 steel build
+* steel install
+* steel update
+* steel init
+* steel server
+* steel build
 
 ###steel install
 
